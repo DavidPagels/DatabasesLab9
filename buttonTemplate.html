@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<HTML>
+<HEAD>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        var iosocket = io.connect('http://localhost:3000');
+        var employeeID, tillID, customerID;
+        function clicked(id, buttonClass){
+            console.log('CLICK', id);
+            iosocket.emit('clicked', id);
+        }
+
+        function setEmpId(){
+            employeeID=$('#empID').val();
+            $('#empID').val('');
+            $('#empMessage').text('Welcome employee number ' + employeeID + "!");
+        }
+
+        function deleteElement(){
+            console.log('in delete', $('.multiList option:selected').text());
+            $('.multiList option:selected').each( function () {
+                iosocket.emit('remItem', $(this).val());
+            })
+            iosocket.emit('updatePrice');
+
+            $('.multiList option:selected').remove();
+        }
+
+        function voidList(){
+            $('.multiList option').each( function () {
+                console.log('in each');
+                iosocket.emit('remItem', $(this).val());
+            })
+            iosocket.emit('updatePrice');
+            $('.multiList').clear();
+        }
+
+        function completeTransaction(paymentType){
+            iosocket.emit('completeTransaction', employeeID, paymentType);
+            $('.complete').fadeOut();
+            $('.begin').fadeIn();
+
+        }
+        function beginTransaction(type){
+            iosocket.emit('beginTransaction', type, tillID, employeeID, customerID);
+            $('.begin').fadeOut();
+            $('.complete').fadeIn();
+        }
+
+        iosocket.on('voidList', function(){
+            voidList();
+        });
+
+        iosocket.on('updateMulti', function(label, id, totalPrice){
+            $('.multiList option[value != "0"]').remove();
+            for( var i = 0; i < label.length; i++){
+                $('.multiList').append('<option value="' + id[i] + '">' + label[i] + '</option>');
+            }
+
+            $('#total').text('$' + totalPrice.toFixed(2));
+
+        });
+
+    </script>
+</HEAD>
+<BODY>
+<p id="empMessage"></p>
+<p>Enter your employee ID.</p>
+<input id='empID' type="textArea">
+<button onclick="setEmpId()">Set Id</button><br>
+DBBUTTONS
+<div style="position: absolute; left:70%; top:10%">
+    <select class='multiList' name="items[]" multiple="multiple" size="20" style="width:200px"></select>
+    <br>total: <B ID="total">0</B><br>
+    <button onclick="deleteElement()">Remove Item(s)</button>
+    <button onclick="voidList()">Void</button>
+    <br>
+    <button class='begin' onclick="beginTransaction('purchase')">Purchase</button>
+    <button class='begin' onclick="beginTransaction('return')">Return</button>
+    <button class='complete' hidden='true' onclick="completeTransaction('cash')">Cash</button>
+    <button class='complete' hidden='true' onclick="completeTransaction('credit')">Credit</button>
+    <button class='complete' hidden='true' onclick="completeTransaction('check')">Check</button>
+</div>
+</BODY>
+</HTML>

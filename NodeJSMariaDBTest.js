@@ -52,10 +52,7 @@ io.sockets.on('connection', function (socket){
     socket.on('clicked', function(id){
 
         console.log('CLICK', id);
-        connection.query('IF EXISTS(SELECT * FROM register WHERE itemID=(SELECT buttonID FROM buttons WHERE buttonIndex=' + id + ')' +
-                            'UPDATE register SET amount=amount + 1 WHERE itemID=(SELECT buttonID FROM buttons WHERE buttonIndex=' + id + ')' +
-                         'ELSE' +
-                             'INSERT INTO register (itemID, label, price, amount, time_stamp) VALUES ((SELECT buttonID FROM buttons WHERE buttonIndex=' + id + '), (SELECT label FROM buttons WHERE buttonIndex=' + id + '), (SELECT price FROM inventory WHERE id=(SELECT buttonID FROM buttons WHERE buttonIndex=' + id + ')), 1, CURRENT_TIMESTAMP)');
+        connection.query('CALL addItem('  + id + ')');
         //connection.query('INSERT INTO register (itemID, label, price, amount, time_stamp) VALUES ((SELECT buttonID FROM buttons WHERE buttonIndex=' + id + '), (SELECT label FROM buttons WHERE buttonIndex=' + id + '), (SELECT price FROM inventory WHERE id=(SELECT buttonID FROM buttons WHERE buttonIndex=' + id + ')), 1, CURRENT_TIMESTAMP)');
         update(socket);
     });
@@ -103,7 +100,7 @@ function update (socket){
     var retLabels = new Array();
     var retVals = new Array();
     var totalPrice = 0.00;
-    var label = connection.query('SELECT id, label, price FROM register');
+    var label = connection.query('SELECT id, label, price, amount FROM register');
 
     label.on('error', function(err){
         console.log('error:', err);
@@ -112,7 +109,7 @@ function update (socket){
     label.on('result', function(result){
         retLabels.push(result.label);
         retVals.push(result.id);
-        totalPrice += parseFloat(result.price);
+        totalPrice += parseFloat(result.price * result.amount);
     });
 
     label.on('end', function(result){

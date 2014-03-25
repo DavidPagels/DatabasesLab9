@@ -52,7 +52,11 @@ io.sockets.on('connection', function (socket){
     socket.on('clicked', function(id){
 
         console.log('CLICK', id);
-        connection.query('INSERT INTO register (itemID, label, price, amount, time_stamp) VALUES ((SELECT buttonID FROM buttons WHERE buttonIndex=' + id + '), (SELECT label FROM buttons WHERE buttonIndex=' + id + '), (SELECT price FROM inventory WHERE id=(SELECT buttonID FROM buttons WHERE buttonIndex=' + id + ')), 1, CURRENT_TIMESTAMP)');
+        connection.query('IF EXISTS(SELECT * FROM register WHERE itemID=(SELECT buttonID FROM buttons WHERE buttonIndex=' + id + ')' +
+                            'UPDATE register SET amount=amount + 1 WHERE itemID=(SELECT buttonID FROM buttons WHERE buttonIndex=' + id + ')' +
+                         'ELSE' +
+                             'INSERT INTO register (itemID, label, price, amount, time_stamp) VALUES ((SELECT buttonID FROM buttons WHERE buttonIndex=' + id + '), (SELECT label FROM buttons WHERE buttonIndex=' + id + '), (SELECT price FROM inventory WHERE id=(SELECT buttonID FROM buttons WHERE buttonIndex=' + id + ')), 1, CURRENT_TIMESTAMP)');
+        //connection.query('INSERT INTO register (itemID, label, price, amount, time_stamp) VALUES ((SELECT buttonID FROM buttons WHERE buttonIndex=' + id + '), (SELECT label FROM buttons WHERE buttonIndex=' + id + '), (SELECT price FROM inventory WHERE id=(SELECT buttonID FROM buttons WHERE buttonIndex=' + id + ')), 1, CURRENT_TIMESTAMP)');
         update(socket);
     });
 
@@ -75,6 +79,7 @@ io.sockets.on('connection', function (socket){
             console.log('in complete' + transID);
             connection.query('UPDATE transactions SET endTime=CURRENT_TIMESTAMP WHERE id =' + transID);
             connection.query('INSERT INTO transactionItems (transactionId, itemId, price, quantity, type) SELECT '  + transID + ', itemID, register.price, amount, "item" FROM register');
+            connection.query('INSERT INTO paymentItems (type, transactionId) VALUES (' + transID + ', ' + paymentType + ')')
         });
 
         idQuery.on('end', function(result){
@@ -112,27 +117,6 @@ function update (socket){
 
     label.on('end', function(result){
         socket.emit('updateMulti', retLabels, retVals, totalPrice);
-        //callback();
-    });
-
-}
-
-function getTransactionID (employeeId){
-
-    var idQuery = connection.query('SELECT MAX(id) FROM transactions WHERE employeeId=' + employeeId);
-    console.log('in get transaction id');
-
-    idQuery.on('error', function(err){
-        console.log('error:', err);
-    });
-
-    idQuery.on('result', function(result){
-        console.log('in result' + result.id);
-        return result.id;
-    });
-
-    idQuery.on('end', function(result){
-        console.log('in end');
         //callback();
     });
 }

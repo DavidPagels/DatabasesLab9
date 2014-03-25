@@ -7,9 +7,15 @@
     <script>
         var iosocket = io.connect('http://localhost:3000');
         var employeeID, tillID, customerID;
+        var inTransaction = false;
         function clicked(id, buttonClass){
-            console.log('CLICK', id);
-            iosocket.emit('clicked', id);
+            if(inTransaction){
+                console.log('CLICK', id);
+                iosocket.emit('clicked', id);
+            }
+            else{
+                window.alert('Please select transaction type.')
+            }
         }
 
         function setEmpId(){
@@ -39,14 +45,18 @@
 
         function completeTransaction(paymentType){
             iosocket.emit('completeTransaction', employeeID, paymentType);
-            $('.complete').fadeOut();
-            $('.begin').fadeIn();
-
+            inTransaction = false;
+            $('.complete').fadeOut(function (){
+                $('.begin').fadeIn();
+            });
         }
+
         function beginTransaction(type){
             iosocket.emit('beginTransaction', type, tillID, employeeID, customerID);
-            $('.begin').fadeOut();
-            $('.complete').fadeIn();
+            inTransaction = true;
+            $('.begin').fadeOut(function (){
+                $('.complete').fadeIn();
+            });
         }
 
         iosocket.on('voidList', function(){
@@ -76,9 +86,11 @@ DBBUTTONS
     <br>total: <B ID="total">0</B><br>
     <button onclick="deleteElement()">Remove Item(s)</button>
     <button onclick="voidList()">Void</button>
-    <br>
+    <br><br>
+    <h4 class='begin'>What type of transaction is this?</h4>
     <button class='begin' onclick="beginTransaction('purchase')">Purchase</button>
     <button class='begin' onclick="beginTransaction('return')">Return</button>
+    <h4 class='complete' hidden="true">What is being used to pay?</h4>
     <button class='complete' hidden='true' onclick="completeTransaction('cash')">Cash</button>
     <button class='complete' hidden='true' onclick="completeTransaction('credit')">Credit</button>
     <button class='complete' hidden='true' onclick="completeTransaction('check')">Check</button>

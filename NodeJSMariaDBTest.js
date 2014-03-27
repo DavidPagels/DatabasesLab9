@@ -86,10 +86,27 @@ io.sockets.on('connection', function (socket){
 
     });
 
+    socket.on('getEmployee', function(id){
+        var theName;
+        var employeeName = connection.query('SELECT firstName, middleInitial, lastName FROM employees WHERE employees.id = ' + id + ';');
+        employeeName.on('error', function(err){
+            console.log('error:', err);
+        });
+
+        employeeName.on('result', function(result){
+            theName= result.firstName + ' ' + result.middleInitial + '. ' + result.lastName;
+        });
+
+        employeeName.on('end', function(result){
+            socket.emit('setEmployee', theName);
+            //callback();
+        });
+    });
+
     socket.on('beginTransaction', function(type, tillID, employeeID, customerID){
         console.log(type);
         connection.query('INSERT INTO transactions(type, startTime, tillId, employeeId, customerId) values ("' + type + '", CURRENT_TIMESTAMP, ' + tillID + ', ' + employeeID + ', ' + customerID + ')');
-    })
+    });
 
     socket.on('updatePrice', function (){
         update(socket);
@@ -100,6 +117,7 @@ function update (socket){
     var retLabels = new Array();
     var retVals = new Array();
     var totalPrice = 0.00;
+    connection.query('CALL updateDeals();')
     var label = connection.query('SELECT id, label, price, amount FROM register');
 
     label.on('error', function(err){

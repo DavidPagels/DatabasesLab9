@@ -21,7 +21,7 @@
         function setEmpId(){
             employeeID=$('#empID').val();
             $('#empID').val('');
-            $('#empMessage').text('Welcome employee number ' + employeeID + "!");
+            iosocket.emit('getEmployee', employeeID);
         }
 
         function deleteElement(){
@@ -71,6 +71,10 @@
 
             $('#total').text('$' + totalPrice.toFixed(2));
 
+        });
+
+        iosocket.on('setEmployee', function(empName){
+            $('#empMessage').text('Welcome ' + empName + "!");
         });
 
     </script>
